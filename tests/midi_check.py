@@ -71,7 +71,7 @@ def main():
     os.makedirs(work, exist_ok=True)
     ly = os.path.join(work, "m.ly")
     subprocess.run([lyxml, score, "-o", ly, "--midi", "-q"], check=True)
-    r = subprocess.run(["lilypond", "-dno-print-pages", "-o", os.path.join(work, "m"), ly], capture_output=True, text=True)
+    r = subprocess.run([os.environ.get("LILYPOND", "lilypond"), "-dno-print-pages", "-o", os.path.join(work, "m"), ly], capture_output=True, text=True)
     midi = os.path.join(work, "m.midi")
     if r.returncode != 0 or not os.path.exists(midi):
         print("LILYPOND FAILED"); return 1

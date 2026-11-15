@@ -5,8 +5,8 @@ BIN="$(dirname "$0")/../target/release/lyxml"
 OUT="${CLAUDE_JOB_DIR:-/tmp}/tmp/lyrt"
 mkdir -p "$OUT"
 if [ $# -eq 0 ]; then
-  set -- /home/sprite/src/caroling/media/musicxml/*.mxl /home/sprite/src/caroling-print/print/out/*.mxl \
-         /home/sprite/src/score-transcription-skill/tests/golden/*.musicxml /home/sprite/scores/barigoule/barigoule.mxl
+  # scores to check: the files given, else $LYXML_CORPUS (a list of files or globs), else tests/data
+  set -- ${LYXML_CORPUS:-"$(dirname "$0")"/data/*}
 fi
 ok=0; bad=0
 for f in "$@"; do
