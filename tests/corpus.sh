@@ -20,4 +20,7 @@ one() {
   echo "$b warnings=$w errors=$e dropped=$dr roundtrip=$rt"
 }
 export -f one; export BIN OUT
-printf '%s\n' "$@" | xargs -P 8 -I{} bash -c 'one "$@"' _ {}
+printf '%s\n' "$@" | xargs -P 8 -I{} bash -c 'one "$@"' _ {} | sort > "$OUT/results.txt"
+cat "$OUT/results.txt"
+# fail on a conversion or LilyPond failure, a LilyPond error, or a round trip that differs
+! grep -q -E "FAIL|errors=[1-9]|roundtrip=(DIFF|noback)" "$OUT/results.txt" 

@@ -1,0 +1,2 @@
+# Test inputs and golden outputs are compared byte for byte: no line-ending conversion.
+tests/** -text

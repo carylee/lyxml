@@ -31,12 +31,35 @@ impl Frac {
         if d == 0 {
             return Frac::ZERO;
         }
-        let g = gcd(n, d).max(1);
-        let s = if d < 0 { -1 } else { 1 };
-        Frac { n: s * n / g, d: s * d / g }
+        Frac::wide(n as i128, d as i128)
     }
     pub fn int(n: i64) -> Frac {
         Frac { n, d: 1 }
+    }
+    /// n/d from wide intermediates: reduced, then fitted into i64. Values that still do
+    /// not fit (only absurd input gets there) are scaled down, never wrapped.
+    fn wide(n: i128, d: i128) -> Frac {
+        if d == 0 {
+            return Frac::ZERO;
+        }
+        let (mut a, mut b) = (n.abs(), d.abs());
+        while b != 0 {
+            let t = a % b;
+            a = b;
+            b = t;
+        }
+        let g = a.max(1);
+        let s: i128 = if d < 0 { -1 } else { 1 };
+        let (mut n, mut d) = (s * n / g, s * d / g);
+        let max = i64::MAX as i128 / 4;
+        while n.abs() > max || d > max {
+            n /= 2;
+            d /= 2;
+            if d == 0 {
+                return Frac { n: if n < 0 { -(max as i64) } else { max as i64 }, d: 1 };
+            }
+        }
+        Frac { n: n as i64, d: d as i64 }
     }
     pub fn is_zero(self) -> bool {
         self.n == 0
@@ -59,25 +82,25 @@ impl Default for Frac {
 impl std::ops::Add for Frac {
     type Output = Frac;
     fn add(self, o: Frac) -> Frac {
-        Frac::new(self.n * o.d + o.n * self.d, self.d * o.d)
+        Frac::wide(self.n as i128 * o.d as i128 + o.n as i128 * self.d as i128, self.d as i128 * o.d as i128)
     }
 }
 impl std::ops::Sub for Frac {
     type Output = Frac;
     fn sub(self, o: Frac) -> Frac {
-        Frac::new(self.n * o.d - o.n * self.d, self.d * o.d)
+        Frac::wide(self.n as i128 * o.d as i128 - o.n as i128 * self.d as i128, self.d as i128 * o.d as i128)
     }
 }
 impl std::ops::Mul for Frac {
     type Output = Frac;
     fn mul(self, o: Frac) -> Frac {
-        Frac::new(self.n * o.n, self.d * o.d)
+        Frac::wide(self.n as i128 * o.n as i128, self.d as i128 * o.d as i128)
     }
 }
 impl std::ops::Div for Frac {
     type Output = Frac;
     fn div(self, o: Frac) -> Frac {
-        Frac::new(self.n * o.d, self.d * o.n)
+        Frac::wide(self.n as i128 * o.d as i128, self.d as i128 * o.n as i128)
     }
 }
 impl std::ops::AddAssign for Frac {

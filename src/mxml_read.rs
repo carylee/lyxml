@@ -536,6 +536,9 @@ impl<'d> PartReader<'d> {
         let grace = child(n, "grace");
         let is_chord = child(n, "chord").is_some();
         let dur = if grace.is_some() { Frac::ZERO } else { self.dur(n) };
+        if dur > Frac::int(64) {
+            self.diags.warn(Some(&self.pid), Some(&m.number), format!("a note or rest {} whole notes long: the file's durations look damaged", dur));
+        }
         let voice: u32 = text_of(n, "voice").and_then(|s| s.parse().ok()).unwrap_or(1);
         let staff: u32 = text_of(n, "staff").and_then(|s| s.parse().ok()).unwrap_or(1);
 

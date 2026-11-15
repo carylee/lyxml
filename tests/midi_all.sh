@@ -12,4 +12,4 @@ one() { f="$1"; b="$(basename "$(dirname "$f")")-$(basename "${f%.*}")"; echo "$
 export -f one; export BIN OUT HERE
 printf '%s\n' "$@" | xargs -P 8 -I{} bash -c 'one "$@"' _ {} | sort > "$OUT/results.txt"
 grep -c ": OK" "$OUT/results.txt" | sed 's/^/OK: /'
-grep -v ": OK" "$OUT/results.txt"
+! grep -v ": OK" "$OUT/results.txt"

@@ -16,3 +16,4 @@ for f in "$@"; do
   if "$BIN" diff "$f" "$OUT/$b.musicxml" > "$OUT/$b.diff" 2>&1; then ok=$((ok+1)); else bad=$((bad+1)); echo "DIFF $b ($(wc -l < "$OUT/$b.diff") lines, $(wc -l < "$OUT/$b.back.txt") reader diagnostics)"; fi
 done
 echo "identical: $ok, different: $bad"
+[ "$bad" -eq 0 ]

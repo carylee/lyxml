@@ -87,12 +87,27 @@ is skipped (and reported) except for the handful of forms that carry score conte
 Page size, staff size, first page number, `hide-empty` and `bar-numbers` are read from
 the file (`<defaults>`, `<miscellaneous-field>`) when the flags are absent.
 
+## Install
+
+Download a binary for Linux, macOS or Windows from the
+[releases page](https://github.com/carylee/lyxml/releases), or build it:
+
+```
+cargo install --git https://github.com/carylee/lyxml     # needs a Rust toolchain
+```
+
+The LilyPond it writes is checked with LilyPond 2.24 and 2.26; the same file compiles
+on both.
+
 ## Build
 
 ```
-cargo build --release        # target/release/lyxml, statically linked
+cargo build --release        # target/release/lyxml
 cargo test
 ```
+
+Exit codes: 0 success, 1 unusable input or bad arguments, 2 something was dropped
+under `--strict`, 3 an internal error (please report it with the input file).
 
 ## Checks
 
@@ -103,8 +118,13 @@ cargo test
 - `tests/lyrt.sh` checks MusicXML -> LilyPond -> MusicXML; `tests/midi_all.sh` compares
   each conversion with LilyPond's own MIDI reading of it.
 
-The corpus scripts default to a private collection of scores; pass your own files as
-arguments (`tests/lyrt.sh path/to/*.mxl`).
+- `tests/xmlfuzz.py` and `tests/lyfuzz.py` feed damaged MusicXML and LilyPond to the
+  binary: it must never crash or hang.
+
+The scripts run on `tests/data` by default. Pass your own files as arguments
+(`tests/lyrt.sh path/to/*.mxl`) or list them in `LYXML_CORPUS`; set `LILYPOND` to test
+against another LilyPond (`LILYPOND=/opt/lilypond-2.26.0/bin/lilypond tests/corpus.sh out`).
+All of this runs in CI on every push.
 
 ## Test music
 

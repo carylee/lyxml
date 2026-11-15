@@ -137,4 +137,5 @@ verseTwo = \lyricmode {
   \layout {
     \context { \Score \omit BarNumber }
   }
+  \midi { }
 }
