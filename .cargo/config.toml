@@ -1,0 +1,3 @@
+# Link the C runtime statically: the release binary runs on any x86-64 Linux.
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-feature=+crt-static"]
