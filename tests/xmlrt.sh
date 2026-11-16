@@ -4,8 +4,8 @@ BIN="$(dirname "$0")/../target/release/lyxml"
 OUT="${CLAUDE_JOB_DIR:-/tmp}/tmp/xmlrt"
 mkdir -p "$OUT"
 if [ $# -eq 0 ]; then
-  set -- /home/sprite/src/caroling/media/musicxml/*.mxl /home/sprite/src/caroling-print/print/out/*.mxl \
-         /home/sprite/src/score-transcription-skill/tests/golden/*.musicxml /home/sprite/scores/barigoule/barigoule.mxl
+  # scores to check: the files given, else $LYXML_CORPUS (a list of files or globs), else tests/data
+  set -- ${LYXML_CORPUS:-"$(dirname "$0")"/data/*}
 fi
 ok=0; bad=0
 for f in "$@"; do
@@ -14,3 +14,4 @@ for f in "$@"; do
   if "$BIN" diff "$f" "$OUT/$b.musicxml" > "$OUT/$b.diff" 2>&1; then ok=$((ok+1)); else bad=$((bad+1)); echo "DIFF $b ($(wc -l < "$OUT/$b.diff") lines)"; fi
 done
 echo "identical: $ok, different: $bad"
+[ "$bad" -eq 0 ]

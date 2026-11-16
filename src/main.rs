@@ -120,6 +120,13 @@ fn fail(msg: &str) -> ! {
 }
 
 fn main() {
+    // An internal error is reported as such and ends with exit code 3, rather than a
+    // bare abort: scripts can tell "bad input" (1) from "lyxml bug" (3).
+    std::panic::set_hook(Box::new(|info| {
+        let place = info.location().map(|l| format!(" at {}:{}", l.file(), l.line())).unwrap_or_default();
+        eprintln!("lyxml: internal error{} — please report this with the input file: https://github.com/carylee/lyxml/issues", place);
+        std::process::exit(3);
+    }));
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.is_empty() || args.iter().any(|a| a == "-h" || a == "--help") {
         print!("{}", USAGE);

@@ -23,7 +23,7 @@ def midi_notes(path):
         length = struct.unpack(">I", data[pos + 4:pos + 8])[0]
         chunk = data[pos + 8:pos + 8 + length]
         pos += 8 + length
-        t, i, status, notes = 0, 0, 0, collections.Counter()
+        t, i, status, notes, name = 0, 0, 0, collections.Counter(), ""
         while i < len(chunk):
             delta = 0
             while True:
@@ -36,6 +36,7 @@ def midi_notes(path):
             if b & 0x80:
                 status = b; i += 1
             if status == 0xFF:
+                meta = chunk[i]
                 i += 1
                 n = 0
                 while True:
@@ -43,6 +44,8 @@ def midi_notes(path):
                     n = (n << 7) | (c & 0x7F)
                     if not c & 0x80:
                         break
+                if meta == 3:
+                    name = chunk[i:i + n].decode("utf-8", errors="replace")
                 i += n
             elif status in (0xF0, 0xF7):
                 n = 0
@@ -61,7 +64,7 @@ def midi_notes(path):
                     if kind == 0x90 and v > 0:
                         notes[(t, a)] += 1
         if notes:
-            tracks.append(notes)
+            tracks.append((name, notes))
     return tracks, division
 
 
@@ -71,7 +74,7 @@ def main():
     os.makedirs(work, exist_ok=True)
     ly = os.path.join(work, "m.ly")
     subprocess.run([lyxml, score, "-o", ly, "--midi", "-q"], check=True)
-    r = subprocess.run(["lilypond", "-dno-print-pages", "-o", os.path.join(work, "m"), ly], capture_output=True, text=True)
+    r = subprocess.run([os.environ.get("LILYPOND", "lilypond"), "-dno-print-pages", "-o", os.path.join(work, "m"), ly], capture_output=True, text=True)
     midi = os.path.join(work, "m.midi")
     if r.returncode != 0 or not os.path.exists(midi):
         print("LILYPOND FAILED"); return 1
@@ -86,7 +89,10 @@ def main():
     keys = sorted(want)
     want = [want[k] for k in keys]
     graces = [graces[k] for k in keys]
-    got, division = midi_notes(midi)
+    tracks, division = midi_notes(midi)
+    # staff tracks carry the staff's name; a chord-symbol track has none and is not compared
+    named = [notes for name, notes in tracks if name]
+    got = named if named else [notes for _, notes in tracks]
     # MIDI ticks cannot hold every tuplet exactly: allow one tick
     want = [collections.Counter({(round(o * division * 4), p): n for (o, p), n in w.items()}) for w in want]
     near = lambda c, k: any(c.get((k[0] + d, k[1]), 0) for d in (0, -1, 1))

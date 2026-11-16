@@ -503,13 +503,14 @@ impl<'a> Writer<'a> {
             lines.push(format!("  first-page-number = {}", p));
         }
         if let Some(font) = &self.opts.text_font {
-            // the font interface changed in LilyPond 2.25
-            let v: Vec<u32> = self.opts.version.split('.').filter_map(|x| x.parse().ok()).collect();
-            if v.len() >= 2 && (v[0], v[1]) >= (2, 25) {
-                lines.push(format!("  property-defaults.fonts.serif = {}", ly_string(font)));
-            } else {
-                lines.push(format!("  #(define fonts (set-global-fonts #:roman {} #:factor (/ staff-height pt 20)))", ly_string(font)));
-            }
+            // The font interface changed in LilyPond 2.25. Both forms are written: the first
+            // only acts where the old function exists (2.24 and earlier), the second is the
+            // new one and is harmless on 2.24. The same file compiles on either.
+            lines.push(format!(
+                "  #(if (defined? 'set-global-fonts) (module-define! (current-module) 'fonts (set-global-fonts #:roman {} #:factor (/ staff-height pt 20))))",
+                ly_string(font)
+            ));
+            lines.push(format!("  property-defaults.fonts.serif = {}", ly_string(font)));
         }
         if !lines.is_empty() {
             self.out.push_str("\\paper {\n");
@@ -1537,14 +1538,28 @@ impl<'a> Writer<'a> {
             tok: Option<String>,
             extend: bool,
             after_rest: bool,
+            /// the note continues a tie or lies under a slur begun earlier
+            cont: bool,
+            /// the note starts a slur or tie (so a melisma on it has a written end)
+            starts_curve: bool,
         }
         let mut entries: Vec<Entry> = vec![];
         let mut after_rest = false;
+        let mut open_slurs: i32 = 0;
+        let mut prev_tied = false;
         for (mi, evs) in vd.measures.iter().enumerate() {
             for e in evs {
                 if e.is_rest() {
                     after_rest = true;
+                    prev_tied = false;
                     continue;
+                }
+                let cont = prev_tied || open_slurs > 0;
+                let tied = e.notes().iter().any(|n| n.tie_start);
+                let starts_curve = tied || !e.slur_starts.is_empty();
+                if e.grace.is_none() {
+                    open_slurs = (open_slurs + e.slur_starts.len() as i32 - e.slur_stops.len() as i32).max(0);
+                    prev_tied = tied;
                 }
                 let ly = e.lyrics.iter().find(|l| l.line == line_no);
                 let tok = ly.map(|l| {
@@ -1561,7 +1576,7 @@ impl<'a> Writer<'a> {
                     }
                     t
                 });
-                entries.push(Entry { mi, tok, extend: ly.map(|l| l.extend).unwrap_or(false), after_rest });
+                entries.push(Entry { mi, tok, extend: ly.map(|l| l.extend).unwrap_or(false), after_rest, cont, starts_curve });
                 after_rest = false;
             }
         }
@@ -1587,11 +1602,17 @@ impl<'a> Writer<'a> {
         }
         // An extender never crosses a rest: LilyPond would carry it over every `_` to the
         // next syllable, so the first unsung note after a rest takes an empty syllable.
+        // Likewise, when the syllable's note starts a slur or a tie, the melisma is that
+        // curve: the extender ends with it, not over the unslurred notes that follow.
         let mut ext_open = false;
+        let mut curve_bound = false;
         for e in entries.iter_mut() {
             match &e.tok {
-                Some(_) => ext_open = e.extend,
-                None if e.after_rest && ext_open => {
+                Some(_) => {
+                    ext_open = e.extend;
+                    curve_bound = e.starts_curve || e.cont;
+                }
+                None if ext_open && (e.after_rest || (curve_bound && !e.cont)) => {
                     e.tok = Some("\"\"".into());
                     ext_open = false;
                 }
