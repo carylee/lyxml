@@ -135,7 +135,7 @@ Everything under `tests/` is public domain or written for these tests:
   (`tests/ly/deck-the-hall.ly` is the source; `tests/data/deck-the-hall.mxl` is lyxml's
   conversion of it).
 - `old_hundredth` — the Genevan psalm tune (1551).
-- `features` — a notation feature test, including bars from Massenet's *Cendrillon* (1899).
+- `features` — a notation feature test, including bars from Viardot's *Cendrillon* (1904).
 - `notation-extras` and the other files in `tests/ly/` — invented test material.
 - `45d`, `46d`, `61k`, `71a` — from the unofficial MusicXML test suite (MIT licence),
   as distributed with LilyPond.
